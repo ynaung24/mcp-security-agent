@@ -167,6 +167,10 @@ src/
 4. Test thoroughly
 5. Submit a pull request
 
+## Disclaimer
+
+Idea for this demo is inspired by this repository: https://github.com/appsec2008/SanitizaAI-Agent/ and this is just a simple POC. DO NOT USE FOR PRODUCTION ENVIONRMENTS.
+
 ## License
 
 MIT License - see LICENSE file for details.
