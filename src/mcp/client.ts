@@ -1,4 +1,5 @@
 import { ToolList, ToolCall, ToolResult, McpRequest } from './types';
+import { ModelProvider } from '../lib/models';
 
 // Custom MCP-like client implementation
 export class McpLikeClient {
@@ -38,7 +39,7 @@ export class McpLikeClient {
     return data.result;
   }
 
-  async callTool(toolCall: ToolCall): Promise<ToolResult> {
+  async callTool(toolCall: ToolCall, provider: ModelProvider = 'openai'): Promise<ToolResult> {
     const response = await fetch(`${this.baseUrl}/mcp`, {
       method: 'POST',
       headers: {
@@ -48,7 +49,8 @@ export class McpLikeClient {
         method: 'tools/call',
         params: {
           name: toolCall.name,
-          arguments: toolCall.arguments
+          arguments: toolCall.arguments,
+          provider: provider
         }
       } as McpRequest)
     });

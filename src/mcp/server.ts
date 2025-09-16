@@ -2,15 +2,10 @@ import express from 'express';
 import cors from 'cors';
 import { createServer } from 'http';
 import { z } from 'zod';
-import OpenAI from 'openai';
 import { Tool, ToolList, McpRequest, McpResponse } from './types';
+import { modelManager, ModelProvider } from '../lib/models';
 
 const PORT = Number(process.env.MCP_PORT ?? 9003);
-
-// Initialize OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY!,
-});
 
 // Custom MCP-like server implementation
 class McpLikeServer {
@@ -36,7 +31,7 @@ class McpLikeServer {
           };
 
         case 'tools/call':
-          const { name, arguments: args } = request.params;
+          const { name, arguments: args, provider = 'openai' } = request.params;
           const tool = this.tools.find(t => t.name === name);
           
           if (!tool) {
@@ -48,8 +43,8 @@ class McpLikeServer {
             };
           }
 
-          // Execute the tool
-          const result = await this.executeTool(tool, args);
+          // Execute the tool with the specified provider
+          const result = await this.executeTool(tool, args, provider);
           return { result };
 
         default:
@@ -70,8 +65,8 @@ class McpLikeServer {
     }
   }
 
-  private async executeTool(tool: Tool, args: any) {
-    // For our sanitization tools, we'll use OpenAI directly
+  private async executeTool(tool: Tool, args: any, provider: ModelProvider = 'openai') {
+    // For our sanitization tools, we'll use the model manager
     const systemPrompts: Record<string, string> = {
       'anonymize_pii': 'You are a PII anonymiser. Replace all personally identifiable information with appropriate placeholders while maintaining the structure and readability of the text. Return only the anonymised text.',
       'redact_financial': 'You are a financial-data redactor. Replace all financial information like bank account numbers, credit card numbers, IBANs, crypto wallet addresses, and sort codes with appropriate placeholders while maintaining the structure and readability of the text. Return only the redacted text.',
@@ -81,16 +76,12 @@ class McpLikeServer {
 
     const systemPrompt = systemPrompts[tool.name] || systemPrompts['general_sanitize'];
     
-    const response = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: args.text },
-      ],
-      temperature: 0.1,
-    });
+    const sanitizedText = await modelManager.generateText(
+      provider,
+      [{ role: 'user', content: args.text }],
+      systemPrompt
+    );
 
-    const sanitizedText = response.choices[0]?.message?.content || '';
     return { sanitizedText };
   }
 }

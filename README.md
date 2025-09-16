@@ -1,10 +1,10 @@
 # SanitizeAI - AI-Powered Data Sanitization
 
-SanitizeAI demonstrates how **AI can protect sensitive information in text** using a **custom MCP-like architecture**. The system uses OpenAI's GPT-3.5-turbo to intelligently select and execute appropriate sanitization tools, with a clean separation between the AI client and tool server.
+SanitizeAI demonstrates how **AI can protect sensitive information in text** using a **custom MCP-like architecture**. The system supports both **OpenAI GPT-3.5-turbo** and **Google Gemini 1.5 Flash** to intelligently select and execute appropriate sanitization tools, with a clean separation between the AI client and tool server.
 
 ## Features
 
-- **AI-Powered Tool Selection**: Uses OpenAI GPT-3.5-turbo to automatically choose the right sanitization tool based on user intent
+- **AI-Powered Tool Selection**: Uses OpenAI GPT-3.5-turbo or Google Gemini 1.5 Flash to automatically choose the right sanitization tool based on user intent
 - **MCP-like Architecture**: Clean separation between MCP client (Next.js) and MCP server (standalone Express service)
 - **Multiple Sanitization Tools**:
   - PII Anonymization (names, emails, phone numbers, addresses, etc.)
@@ -33,7 +33,7 @@ MCP Server (standalone HTTP service)  –  owns tools
 
 - **Framework**: Next.js 14 (App Router)
 - **AI SDK**: OpenAI SDK (direct integration)
-- **AI Model**: OpenAI GPT-3.5-turbo
+- **AI Models**: OpenAI GPT-3.5-turbo or Google Gemini 1.5 Flash (user selectable)
 - **AI Protocol**: Custom MCP-like implementation
 - **UI**: Tailwind CSS + React Hook Form
 - **Language**: TypeScript
@@ -72,28 +72,38 @@ Create a `.env` file with:
 
 ```env
 OPENAI_API_KEY=your_openai_api_key_here
+GEMINI_API_KEY=your_gemini_api_key_here
 MCP_PORT=9003
 ```
 
 ## Cost Information
 
-This system uses **OpenAI GPT-3.5-turbo** for cost-effective AI processing:
+This system supports both **OpenAI GPT-3.5-turbo** and **Google Gemini 1.5 Pro** for cost-effective AI processing:
 
+### OpenAI GPT-3.5-turbo:
 - **Input**: $0.50 per 1M tokens
 - **Output**: $1.50 per 1M tokens
 - **Typical cost per request**: ~$0.0003-0.001
-- **100 requests/day**: ~$1-3 per month
-- **1000 requests/day**: ~$10-30 per month
 
-The system makes 2 API calls per sanitization request (tool selection + sanitization), making it very cost-effective for most use cases.
+### Google Gemini 1.5 Flash:
+- **Input**: $0.075 per 1M tokens
+- **Output**: $0.30 per 1M tokens
+- **Typical cost per request**: ~$0.0001-0.0005
+
+### Usage Estimates:
+- **100 requests/day**: ~$0.50-2 per month
+- **1000 requests/day**: ~$5-20 per month
+
+The system makes 2 API calls per sanitization request (tool selection + sanitization), making it very cost-effective for most use cases. **Gemini 1.5 Flash is actually cheaper than OpenAI** and faster, making it an excellent choice for high-volume usage.
 
 ## Usage
 
 1. **Load Sample Data**: Click on one of the sample data sets to quickly test the system
 2. **Enter Text**: Paste or type the text you want to sanitize
 3. **Specify Intent**: Describe what type of sanitization you want (e.g., "Anonymize PII", "Redact financial data")
-4. **Process**: Click "Sanitize Text" and watch the AI select the appropriate tool and process your data
-5. **View Results**: See the sanitized text, which tool was used, and optionally view the raw output
+4. **Choose Model**: Select between OpenAI GPT-3.5-turbo or Google Gemini 1.5 Flash
+5. **Process**: Click "Sanitize Text" and watch the AI select the appropriate tool and process your data
+6. **View Results**: See the sanitized text, which tool was used, which model was used, and optionally view the raw output
 
 ## Available Sanitization Tools
 
@@ -136,7 +146,7 @@ src/
 1. **User Input**: User provides text and sanitization intent
 2. **MCP Connection**: Next.js server action connects to the MCP server
 3. **Tool Discovery**: MCP client lists available sanitization tools
-4. **AI Tool Selection**: OpenAI GPT-3.5-turbo analyzes the request and selects the best tool
+4. **AI Tool Selection**: Selected AI model (OpenAI or Gemini) analyzes the request and selects the best tool
 5. **Tool Execution**: Selected tool is executed on the MCP server
 6. **Result Streaming**: Sanitized text and metadata are streamed back to the browser
 

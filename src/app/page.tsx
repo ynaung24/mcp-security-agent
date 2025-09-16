@@ -10,6 +10,7 @@ import { getSanitizedTextStreamAction } from './actions';
 const formSchema = z.object({
   text: z.string().min(1, 'Text is required'),
   sanitizationRequest: z.string().min(1, 'Sanitization request is required'),
+  modelProvider: z.enum(['openai', 'gemini']).default('openai'),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -35,7 +36,7 @@ const sampleData = [
 export default function Home() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState<string>('');
-  const [result, setResult] = useState<{ sanitizedText: string; toolUsed: string } | null>(null);
+  const [result, setResult] = useState<{ sanitizedText: string; toolUsed: string; modelUsed: string } | null>(null);
   const [rawOutput, setRawOutput] = useState<any>(null);
 
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<FormData>({
@@ -146,6 +147,23 @@ export default function Home() {
               )}
             </div>
 
+            <div>
+              <label htmlFor="modelProvider" className="block text-sm font-medium text-gray-700 mb-2">
+                AI Model Provider
+              </label>
+              <select
+                {...register('modelProvider')}
+                id="modelProvider"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="openai">OpenAI GPT-3.5-turbo</option>
+                <option value="gemini">Google Gemini 1.5 Flash</option>
+              </select>
+              {errors.modelProvider && (
+                <p className="mt-1 text-sm text-red-600">{errors.modelProvider.message}</p>
+              )}
+            </div>
+
             <button
               type="submit"
               disabled={isProcessing}
@@ -175,6 +193,13 @@ export default function Home() {
                 <h4 className="font-medium text-gray-700 mb-2">Tool Used:</h4>
                 <div className="bg-gray-100 px-3 py-2 rounded-md">
                   <code className="text-sm">{result.toolUsed}</code>
+                </div>
+              </div>
+
+              <div>
+                <h4 className="font-medium text-gray-700 mb-2">Model Used:</h4>
+                <div className="bg-gray-100 px-3 py-2 rounded-md">
+                  <code className="text-sm">{result.modelUsed}</code>
                 </div>
               </div>
 

@@ -6,9 +6,10 @@ import { createStreamableValue } from 'ai/rsc';
 export async function getSanitizedTextStreamAction(data: {
   text: string;
   sanitizationRequest: string;
+  modelProvider?: 'openai' | 'gemini';
 }) {
   const stream = createStreamableValue<
-    { step: string } | { result: { sanitizedText: string; toolUsed: string } },
+    { step: string } | { result: { sanitizedText: string; toolUsed: string; modelUsed: string } },
     never
   >();
 

@@ -1,23 +1,20 @@
 import { z } from 'zod';
-import OpenAI from 'openai';
 import { McpLikeClient } from '../../mcp/client';
+import { modelManager, ModelProvider } from '../../lib/models';
 
 const inputSchema = z.object({
   text: z.string(),
   sanitizationRequest: z.string(), // free-form user intent
+  modelProvider: z.enum(['openai', 'gemini']).optional().default('openai'),
 });
 type Input = z.infer<typeof inputSchema>;
 
 const outputSchema = z.object({
   sanitizedText: z.string(),
   toolUsed: z.string(),
+  modelUsed: z.string(),
 });
 type Output = z.infer<typeof outputSchema>;
-
-// Initialize OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY!,
-});
 
 export async function sanitizeTextWithMCP(
   raw: Input,
@@ -32,7 +29,7 @@ export async function sanitizeTextWithMCP(
   const toolList = await client.listTools();
 
   onProgress?.('select_tool');
-  const { text: userText, sanitizationRequest } = inputSchema.parse(raw);
+  const { text: userText, sanitizationRequest, modelProvider } = inputSchema.parse(raw);
 
   // Create tool definitions for OpenAI
   const tools = toolList.tools.map((t) => ({
@@ -53,9 +50,9 @@ export async function sanitizeTextWithMCP(
     },
   }));
 
-  const llmResp = await openai.chat.completions.create({
-    model: 'gpt-3.5-turbo',
-    messages: [
+  const llmResp = await modelManager.generateWithTools(
+    modelProvider as ModelProvider,
+    [
       {
         role: 'system',
         content: `You are an assistant that picks exactly ONE tool from the list below to satisfy the user's request.`,
@@ -66,9 +63,8 @@ export async function sanitizeTextWithMCP(
       },
     ],
     tools,
-    tool_choice: 'required',
-    temperature: 0.1,
-  });
+    'required'
+  );
 
   const call = llmResp.choices[0]?.message?.tool_calls?.[0];
   if (!call) throw new Error('Model did not call a tool');
@@ -77,11 +73,12 @@ export async function sanitizeTextWithMCP(
   const result = await client.callTool({
     name: call.function.name,
     arguments: JSON.parse(call.function.arguments),
-  });
+  }, modelProvider as ModelProvider);
   onProgress?.('tool_exec_finish');
 
   return {
     sanitizedText: (result as any).sanitizedText,
     toolUsed: call.function.name,
+    modelUsed: modelProvider,
   };
 }
